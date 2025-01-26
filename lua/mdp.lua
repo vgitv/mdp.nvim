@@ -12,11 +12,6 @@ local state = {
 ---@param opts table Plugin options
 M.setup = function(opts)
     opts = opts or {}
-    vim.api.nvim_create_user_command("Mdp", function()
-        M.mdp { bufnr = 0 }
-    end, {
-        desc = "Start markdown presentation from current buffer",
-    })
 end
 
 ---Create a floating window
