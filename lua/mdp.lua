@@ -36,6 +36,11 @@ local function create_floating_window(opts)
     return { buf = buf, win = win }
 end
 
+---Create buffer-local keymap
+local mdp_keymap = function(mode, key, callback)
+    vim.keymap.set(mode, key, callback, { buffer = state.floats.presentation.buf })
+end
+
 ---Generate windows configurations
 ---@return table: Table of multiple windows configurations
 local create_window_config = function(opts)
@@ -143,7 +148,7 @@ M.mdp = function(opts)
 
     -- Define keymaps
     -- Next slide
-    vim.keymap.set("n", "n", function()
+    mdp_keymap("n", "n", function()
         if state.slide_number < #state.document.slides then
             state.slide_number = state.slide_number + 1
             vim.api.nvim_set_option_value("modifiable", true, { buf = state.floats.presentation.buf })
@@ -151,10 +156,10 @@ M.mdp = function(opts)
             vim.api.nvim_set_option_value("modifiable", false, { buf = state.floats.presentation.buf })
         end
         vim.cmd "normal gg0"
-    end, { buffer = state.floats.presentation.buf })
+    end)
 
     -- Previous slide
-    vim.keymap.set("n", "p", function()
+    mdp_keymap("n", "p", function()
         if state.slide_number > 1 then
             state.slide_number = state.slide_number - 1
             vim.api.nvim_set_option_value("modifiable", true, { buf = state.floats.presentation.buf })
@@ -162,26 +167,26 @@ M.mdp = function(opts)
             vim.api.nvim_set_option_value("modifiable", false, { buf = state.floats.presentation.buf })
         end
         vim.cmd "normal gg0"
-    end, { buffer = state.floats.presentation.buf })
+    end)
 
     -- Quit presentation
-    vim.keymap.set("n", "q", function()
+    mdp_keymap("n", "q", function()
         vim.api.nvim_win_close(state.floats.presentation.win, true)
-    end, { buffer = state.floats.presentation.buf })
+    end)
 
     -- Decrease presentation floating window relative size
-    vim.keymap.set("n", "-", function()
+    mdp_keymap("n", "-", function()
         state.fill_factor = math.max(state.fill_factor - 0.1, 0.5)
         local updated_windows = create_window_config({ factor = state.fill_factor })
         vim.api.nvim_win_set_config(state.floats.presentation.win, updated_windows.presentation)
-    end, { buffer = state.floats.presentation.buf })
+    end)
 
     -- Increase presentation floating window relative size
-    vim.keymap.set("n", "+", function()
+    mdp_keymap("n", "+", function()
         state.fill_factor = math.min(state.fill_factor + 0.1, 0.9)
         local updated_windows = create_window_config({ factor = state.fill_factor })
         vim.api.nvim_win_set_config(state.floats.presentation.win, updated_windows.presentation)
-    end, { buffer = state.floats.presentation.buf })
+    end)
 
     -- Update windows properties on resize
     vim.api.nvim_create_autocmd("VimResized", {
