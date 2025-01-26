@@ -21,8 +21,9 @@ end
 ---Create a floating window
 ---@param opts table: Window configuration
 ---@return table: Table with buf and win ids
-local function create_floating_window(opts)
+local function create_floating_window(opts, enter)
     opts = opts or {}
+    enter = enter or false
 
     -- Create a buffer
     local buf = vim.api.nvim_create_buf(false, true)
@@ -31,7 +32,7 @@ local function create_floating_window(opts)
     local win_config = opts
 
     -- Create the floating window
-    local win = vim.api.nvim_open_win(buf, true, win_config)
+    local win = vim.api.nvim_open_win(buf, enter, win_config)
 
     return { buf = buf, win = win }
 end
@@ -47,8 +48,11 @@ local create_window_config = function(opts)
     opts = opts or {}
     local factor = opts.factor or 0.8
 
-    local presentation_height = math.floor(vim.o.lines * factor)
-    local presentation_width = math.floor(vim.o.columns * factor)
+    local pres_width = math.floor(vim.o.columns * factor)
+    local pres_height = math.floor(vim.o.lines * factor)
+    local pres_start_col = math.floor((vim.o.columns - pres_width - 0.1) / 2)
+    local pres_start_row = math.floor((vim.o.lines - pres_height - 0.1) / 2)
+
 
     return {
         background = {
@@ -62,12 +66,21 @@ local create_window_config = function(opts)
         },
         presentation = {
             relative = "editor",
-            width = presentation_width,
-            height = presentation_height,
+            width = pres_width,
+            height = pres_height,
             style = "minimal",
             border = "rounded",
-            row = math.floor((vim.o.lines - presentation_height - 0.1) / 2),
-            col = math.floor((vim.o.columns - presentation_width - 0.1) / 2),
+            col = pres_start_col,
+            row = pres_start_row,
+            zindex = 2,
+        },
+        footer = {
+            relative = "editor",
+            width = pres_width + 2, -- + 2 for border
+            height = 1,
+            style = "minimal",
+            col = pres_start_col,
+            row = pres_start_row + pres_height + 2, -- + 2 for border
             zindex = 2,
         },
     }
@@ -101,6 +114,16 @@ local parse_slides = function(lines)
     return document
 end
 
+---Set slide to the presentation buffer
+local set_slide = function(slide_number)
+    state.slide_number = slide_number
+    vim.api.nvim_set_option_value("modifiable", true, { buf = state.floats.presentation.buf })
+    vim.api.nvim_buf_set_lines(state.floats.presentation.buf, 0, -1, false, state.document.slides[slide_number])
+    vim.api.nvim_set_option_value("modifiable", false, { buf = state.floats.presentation.buf })
+    state.footer = string.format("%d / %d", state.slide_number, #state.document.slides)
+    vim.api.nvim_buf_set_lines(state.floats.footer.buf, 0, -1, false, { state.footer })
+end
+
 ---Start markdown presentation
 M.mdp = function(opts)
     opts = opts or {}
@@ -112,7 +135,8 @@ M.mdp = function(opts)
     state.document = parse_slides(lines)
     state.slide_number = 1
     state.floats.background = create_floating_window(windows.background)
-    state.floats.presentation = create_floating_window(windows.presentation)
+    state.floats.footer = create_floating_window(windows.footer)
+    state.floats.presentation = create_floating_window(windows.presentation, true)
 
     -- Set local options
     vim.api.nvim_set_option_value("filetype", "markdown", { buf = state.floats.presentation.buf })
@@ -142,7 +166,9 @@ M.mdp = function(opts)
             for option, config in pairs(plugin_options) do
                 vim.opt[option] = config.original
             end
-            vim.api.nvim_win_close(state.floats.background.win, true)
+            -- TODO for loop
+            pcall(vim.api.nvim_win_close, state.floats.background.win, true)
+            pcall(vim.api.nvim_win_close, state.floats.footer.win, true)
         end,
     })
 
@@ -150,10 +176,7 @@ M.mdp = function(opts)
     -- Next slide
     mdp_keymap("n", "n", function()
         if state.slide_number < #state.document.slides then
-            state.slide_number = state.slide_number + 1
-            vim.api.nvim_set_option_value("modifiable", true, { buf = state.floats.presentation.buf })
-            vim.api.nvim_buf_set_lines(state.floats.presentation.buf, 0, -1, false, state.document.slides[state.slide_number])
-            vim.api.nvim_set_option_value("modifiable", false, { buf = state.floats.presentation.buf })
+            set_slide(state.slide_number + 1)
         end
         vim.cmd "normal gg0"
     end)
@@ -161,10 +184,7 @@ M.mdp = function(opts)
     -- Previous slide
     mdp_keymap("n", "p", function()
         if state.slide_number > 1 then
-            state.slide_number = state.slide_number - 1
-            vim.api.nvim_set_option_value("modifiable", true, { buf = state.floats.presentation.buf })
-            vim.api.nvim_buf_set_lines(state.floats.presentation.buf, 0, -1, false, state.document.slides[state.slide_number])
-            vim.api.nvim_set_option_value("modifiable", false, { buf = state.floats.presentation.buf })
+            set_slide(state.slide_number - 1)
         end
         vim.cmd "normal gg0"
     end)
@@ -178,14 +198,18 @@ M.mdp = function(opts)
     mdp_keymap("n", "-", function()
         state.fill_factor = math.max(state.fill_factor - 0.1, 0.5)
         local updated_windows = create_window_config({ factor = state.fill_factor })
+        -- TODO for loop
         vim.api.nvim_win_set_config(state.floats.presentation.win, updated_windows.presentation)
+        vim.api.nvim_win_set_config(state.floats.footer.win, updated_windows.footer)
     end)
 
     -- Increase presentation floating window relative size
     mdp_keymap("n", "+", function()
         state.fill_factor = math.min(state.fill_factor + 0.1, 0.9)
         local updated_windows = create_window_config({ factor = state.fill_factor })
+        -- TODO for loop
         vim.api.nvim_win_set_config(state.floats.presentation.win, updated_windows.presentation)
+        vim.api.nvim_win_set_config(state.floats.footer.win, updated_windows.footer)
     end)
 
     -- Update windows properties on resize
@@ -202,7 +226,8 @@ M.mdp = function(opts)
     })
 
     -- Display first slide
-    vim.api.nvim_buf_set_lines(state.floats.presentation.buf, 0, -1, false, state.document.slides[1])
+    set_slide(1)
+    -- vim.api.nvim_buf_set_lines(state.floats.presentation.buf, 0, -1, false, state.document.slides[1])
 
     -- Enter non-modifiable mode
     vim.api.nvim_set_option_value("modifiable", false, { buf = state.floats.presentation.buf })
