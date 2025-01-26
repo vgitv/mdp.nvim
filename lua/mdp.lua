@@ -122,12 +122,16 @@ end
 
 ---Set slide to the presentation buffer
 local set_slide = function(slide_number)
-    state.slide_number = slide_number
-    vim.api.nvim_set_option_value("modifiable", true, { buf = state.floats.presentation.buf })
-    vim.api.nvim_buf_set_lines(state.floats.presentation.buf, 0, -1, false, state.document.slides[slide_number])
-    vim.api.nvim_set_option_value("modifiable", false, { buf = state.floats.presentation.buf })
-    set_footer()
-    vim.api.nvim_buf_set_lines(state.floats.footer.buf, 0, -1, false, { state.footer })
+    if 1 <= slide_number and slide_number <= #state.document.slides then
+        state.slide_number = slide_number
+        vim.api.nvim_set_option_value("modifiable", true, { buf = state.floats.presentation.buf })
+        vim.api.nvim_buf_set_lines(state.floats.presentation.buf, 0, -1, false, state.document.slides[slide_number])
+        vim.api.nvim_set_option_value("modifiable", false, { buf = state.floats.presentation.buf })
+        set_footer()
+        vim.api.nvim_buf_set_lines(state.floats.footer.buf, 0, -1, false, { state.footer })
+        -- The "!" here is important because we remap the "g" key later
+        vim.cmd "normal! gg0"
+    end
 end
 
 ---Start markdown presentation
@@ -186,18 +190,22 @@ M.mdp = function(opts)
     -- Define keymaps
     -- Next slide
     mdp_keymap("n", "n", function()
-        if state.slide_number < #state.document.slides then
-            set_slide(state.slide_number + 1)
-        end
-        vim.cmd "normal gg0"
+        set_slide(state.slide_number + 1)
     end)
 
     -- Previous slide
     mdp_keymap("n", "p", function()
-        if state.slide_number > 1 then
-            set_slide(state.slide_number - 1)
-        end
-        vim.cmd "normal gg0"
+        set_slide(state.slide_number - 1)
+    end)
+
+    -- First slide
+    mdp_keymap("n", "gg", function()
+        set_slide(1)
+    end)
+
+    -- Last slide
+    mdp_keymap("n", "G", function()
+        set_slide(#state.document.slides)
     end)
 
     -- Quit presentation
