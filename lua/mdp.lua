@@ -5,6 +5,7 @@ local state = {
     slide_number = 1,
     floats = {},
     fill_factor = 0.8,
+    md_file = nil,
 }
 
 ---Plugin setup function
@@ -50,9 +51,9 @@ local create_window_config = function(opts)
 
     local pres_width = math.floor(vim.o.columns * factor)
     local pres_height = math.floor(vim.o.lines * factor)
+
     local pres_start_col = math.floor((vim.o.columns - pres_width - 0.1) / 2)
     local pres_start_row = math.floor((vim.o.lines - pres_height - 0.1) / 2)
-
 
     return {
         background = {
@@ -76,10 +77,10 @@ local create_window_config = function(opts)
         },
         footer = {
             relative = "editor",
-            width = pres_width + 2, -- + 2 for border
+            width = #state.footer,
             height = 1,
             style = "minimal",
-            col = pres_start_col,
+            col = math.floor(vim.o.columns / 2 - #state.footer / 2),
             row = pres_start_row + pres_height + 2, -- + 2 for border
             zindex = 2,
         },
@@ -114,13 +115,18 @@ local parse_slides = function(lines)
     return document
 end
 
+---Set footer
+local set_footer = function()
+    state.footer = string.format(" %d / %d - %s", state.slide_number, #state.document.slides, state.md_file)
+end
+
 ---Set slide to the presentation buffer
 local set_slide = function(slide_number)
     state.slide_number = slide_number
     vim.api.nvim_set_option_value("modifiable", true, { buf = state.floats.presentation.buf })
     vim.api.nvim_buf_set_lines(state.floats.presentation.buf, 0, -1, false, state.document.slides[slide_number])
     vim.api.nvim_set_option_value("modifiable", false, { buf = state.floats.presentation.buf })
-    state.footer = string.format("%d / %d", state.slide_number, #state.document.slides)
+    set_footer()
     vim.api.nvim_buf_set_lines(state.floats.footer.buf, 0, -1, false, { state.footer })
 end
 
@@ -129,10 +135,15 @@ M.mdp = function(opts)
     opts = opts or {}
     opts.bufnr = opts.bufnr or 0
 
+    state.md_file = string.match(vim.api.nvim_buf_get_name(opts.bufnr), "[^/]+$")
+
     local lines = vim.api.nvim_buf_get_lines(opts.bufnr, 0, -1, false)
-    local windows = create_window_config({ factor = state.fill_factor })
 
     state.document = parse_slides(lines)
+    -- FIXME it is wierd that the footer is set two times for the first slide, but we need to know the footer length
+    -- to place the footer window
+    set_footer()
+    local windows = create_window_config({ factor = state.fill_factor })
     state.slide_number = 1
     state.floats.background = create_floating_window(windows.background)
     state.floats.footer = create_floating_window(windows.footer)
