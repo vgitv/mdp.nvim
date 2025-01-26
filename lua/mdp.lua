@@ -142,7 +142,7 @@ M.mdp = function(opts)
     -- FIXME it is wierd that the footer is set two times for the first slide, but we need to know the footer length
     -- to place the footer window
     set_footer()
-    local windows = create_window_config({ factor = state.fill_factor })
+    local windows = create_window_config { factor = state.fill_factor }
     state.slide_number = 1
     state.floats.background = create_floating_window(windows.background)
     state.floats.footer = create_floating_window(windows.footer)
@@ -211,7 +211,7 @@ M.mdp = function(opts)
     -- Decrease presentation floating window relative size
     mdp_keymap("n", "-", function()
         state.fill_factor = math.max(state.fill_factor - 0.1, 0.5)
-        local updated_windows = create_window_config({ factor = state.fill_factor })
+        local updated_windows = create_window_config { factor = state.fill_factor }
         -- TODO for loop
         vim.api.nvim_win_set_config(state.floats.presentation.win, updated_windows.presentation)
         vim.api.nvim_win_set_config(state.floats.footer.win, updated_windows.footer)
@@ -220,7 +220,7 @@ M.mdp = function(opts)
     -- Increase presentation floating window relative size
     mdp_keymap("n", "+", function()
         state.fill_factor = math.min(state.fill_factor + 0.1, 0.9)
-        local updated_windows = create_window_config({ factor = state.fill_factor })
+        local updated_windows = create_window_config { factor = state.fill_factor }
         -- TODO for loop
         vim.api.nvim_win_set_config(state.floats.presentation.win, updated_windows.presentation)
         vim.api.nvim_win_set_config(state.floats.footer.win, updated_windows.footer)
@@ -231,12 +231,12 @@ M.mdp = function(opts)
         group = vim.api.nvim_create_augroup("mdp-resized", {}),
         callback = function()
             if vim.api.nvim_win_is_valid(state.floats.presentation.win) then
-                local updated_windows = create_window_config({ factor = state.fill_factor })
+                local updated_windows = create_window_config { factor = state.fill_factor }
                 for window, float in pairs(state.floats) do
                     vim.api.nvim_win_set_config(float.win, updated_windows[window])
                 end
             end
-        end
+        end,
     })
 
     -- Display first slide
