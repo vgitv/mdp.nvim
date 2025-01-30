@@ -44,8 +44,9 @@ local create_window_config = function(opts)
     opts = opts or {}
     local factor = opts.factor or 0.8
 
-    local pres_width = math.floor(vim.o.columns * factor)
-    local pres_height = math.floor(vim.o.lines * factor)
+    local pres_height = math.floor(math.min(vim.o.columns, vim.o.lines) * factor)
+    -- apply an arbitrary factor to get a square shape, because a row height is bigger than a column width
+    local pres_width = math.floor(pres_height * 2.2)
 
     local pres_start_col = math.floor((vim.o.columns - pres_width - 0.1) / 2)
     local pres_start_row = math.floor((vim.o.lines - pres_height - 0.1) / 2)
@@ -210,7 +211,7 @@ M.mdp = function(opts)
 
     -- Decrease presentation floating window relative size
     mdp_keymap("n", "-", function()
-        state.fill_factor = math.max(state.fill_factor - 0.1, 0.5)
+        state.fill_factor = math.max(state.fill_factor - 0.1, 0.4)
         local updated_windows = create_window_config { factor = state.fill_factor }
         -- TODO for loop
         vim.api.nvim_win_set_config(state.floats.presentation.win, updated_windows.presentation)
@@ -219,7 +220,7 @@ M.mdp = function(opts)
 
     -- Increase presentation floating window relative size
     mdp_keymap("n", "+", function()
-        state.fill_factor = math.min(state.fill_factor + 0.1, 0.9)
+        state.fill_factor = math.min(state.fill_factor + 0.1, 1)
         local updated_windows = create_window_config { factor = state.fill_factor }
         -- TODO for loop
         vim.api.nvim_win_set_config(state.floats.presentation.win, updated_windows.presentation)
