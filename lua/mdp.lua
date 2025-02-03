@@ -223,11 +223,15 @@ M.mdp = function(opts)
     -- Next slide
     mdp_keymap("n", "n", function()
         set_slide(state.slide_number + 1)
+        -- The footer width changes when we jump from slide 9 to slide 10, from 99 to 100 etc.
+        vim.api.nvim_win_set_config(state.floats.footer.win, { width = #state.footer })
     end)
 
     -- Previous slide
     mdp_keymap("n", "p", function()
         set_slide(state.slide_number - 1)
+        -- The footer width changes when we jump from slide 9 to slide 10, from 99 to 100 etc.
+        vim.api.nvim_win_set_config(state.floats.footer.win, { width = #state.footer })
     end)
 
     -- First slide
