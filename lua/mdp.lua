@@ -130,6 +130,42 @@ local set_slide = function(slide_number)
     end
 end
 
+---Execute code block under cursor
+local run_codeblock = function()
+    local row, _ = unpack(vim.api.nvim_win_get_cursor(0))
+    local codeblock = {}
+    local lines = vim.api.nvim_buf_get_lines(0, row, -1, false)
+    local endrow = row
+    for _, line in ipairs(lines) do
+        endrow = endrow + 1
+        if line:find("^```") then
+            break
+        end
+        table.insert(codeblock, line)
+    end
+
+    local tempfile = vim.fn.tempname() .. ".sh"
+    vim.fn.writefile(codeblock, tempfile)
+
+    local result = vim.system({ "bash", tempfile }, { text = true }):wait()
+    if result.code ~= 0 then
+        print("error")
+        return
+    end
+
+    local output = vim.split(result.stdout, "\n")
+    if output[#output] == "" then
+        table.remove(output)
+    end
+    table.insert(output, 1, "```")
+    table.insert(output, 1, "")
+    table.insert(output, "```")
+
+    vim.api.nvim_set_option_value("modifiable", true, { buf = state.floats.presentation.buf })
+    vim.api.nvim_buf_set_lines(0, endrow, endrow, false, output)
+    vim.api.nvim_set_option_value("modifiable", false, { buf = state.floats.presentation.buf })
+end
+
 ---Start markdown presentation
 M.mdp = function(opts)
     opts = opts or {}
@@ -226,6 +262,9 @@ M.mdp = function(opts)
         vim.api.nvim_win_set_config(state.floats.presentation.win, updated_windows.presentation)
         vim.api.nvim_win_set_config(state.floats.footer.win, updated_windows.footer)
     end)
+
+    -- Execute code block under cursor
+    mdp_keymap("n", "x", run_codeblock)
 
     -- Update windows properties on resize
     vim.api.nvim_create_autocmd("VimResized", {
