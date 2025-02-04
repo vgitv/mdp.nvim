@@ -136,6 +136,7 @@ end
 
 ---Execute bash code
 ---@param codeblock table Lines of code to execute
+---@return table: table with output lines
 local codeblock_bash = function(codeblock)
     local tempfile = vim.fn.tempname() .. ".sh"
     vim.fn.writefile(codeblock, tempfile)
@@ -152,6 +153,7 @@ end
 
 ---Execute python code
 ---@param codeblock table Lines of code to execute
+---@return table: table with output lines
 local codeblock_python = function(codeblock)
     local tempfile = vim.fn.tempname() .. ".py"
     vim.fn.writefile(codeblock, tempfile)
@@ -170,24 +172,23 @@ local options = {
     executors = {
         bash = codeblock_bash,
         python = codeblock_python,
-    }
+    },
 }
-
 
 ---Execute code block under cursor
 local run_codeblock = function()
     local row, _ = unpack(vim.api.nvim_win_get_cursor(0))
     local codeblock = {}
     local current_line = vim.api.nvim_get_current_line()
-    if not current_line:find("^```") then
-        print("Not on a code block!")
+    if not current_line:find "^```" then
+        print "Not on a code block!"
         return
     end
     local lines = vim.api.nvim_buf_get_lines(0, row, -1, false)
     local endrow = row
     for _, line in ipairs(lines) do
         endrow = endrow + 1
-        if line:find("^```") then
+        if line:find "^```" then
             break
         end
         table.insert(codeblock, line)
