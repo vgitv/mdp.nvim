@@ -139,6 +139,7 @@ end
 ---@return table: table with output lines
 local codeblock_bash = function(codeblock)
     local tempfile = vim.fn.tempname() .. ".sh"
+    table.insert(codeblock, 1, "set -euo pipefail")
     vim.fn.writefile(codeblock, tempfile)
 
     local result = vim.system({ "bash", tempfile }, { text = true }):wait()
