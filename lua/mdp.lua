@@ -134,6 +134,46 @@ local set_slide = function(slide_number)
     end
 end
 
+---Execute bash code
+---@param codeblock table Lines of code to execute
+local codeblock_bash = function(codeblock)
+    local tempfile = vim.fn.tempname() .. ".sh"
+    vim.fn.writefile(codeblock, tempfile)
+
+    local result = vim.system({ "bash", tempfile }, { text = true }):wait()
+    if result.code ~= 0 then
+        local output = vim.split(result.stderr, "\n")
+        return output
+    end
+
+    local output = vim.split(result.stdout, "\n")
+    return output
+end
+
+---Execute python code
+---@param codeblock table Lines of code to execute
+local codeblock_python = function(codeblock)
+    local tempfile = vim.fn.tempname() .. ".py"
+    vim.fn.writefile(codeblock, tempfile)
+
+    local result = vim.system({ "python", tempfile }, { text = true }):wait()
+    if result.code ~= 0 then
+        local output = vim.split(result.stderr, "\n")
+        return output
+    end
+
+    local output = vim.split(result.stdout, "\n")
+    return output
+end
+
+local options = {
+    executors = {
+        bash = codeblock_bash,
+        python = codeblock_python,
+    }
+}
+
+
 ---Execute code block under cursor
 local run_codeblock = function()
     local row, _ = unpack(vim.api.nvim_win_get_cursor(0))
@@ -153,19 +193,13 @@ local run_codeblock = function()
         table.insert(codeblock, line)
     end
 
-    local tempfile = vim.fn.tempname() .. ".sh"
-    vim.fn.writefile(codeblock, tempfile)
+    local executor = string.gsub(current_line, "```", "")
+    local output = options.executors[executor](codeblock)
 
-    local result = vim.system({ "bash", tempfile }, { text = true }):wait()
-    if result.code ~= 0 then
-        print("error")
-        return
-    end
-
-    local output = vim.split(result.stdout, "\n")
     if output[#output] == "" then
         table.remove(output)
     end
+
     table.insert(output, 1, "```")
     table.insert(output, 1, "")
     table.insert(output, "```")
