@@ -124,9 +124,13 @@ local set_slide = function(slide_number)
         vim.api.nvim_buf_set_lines(state.floats.presentation.buf, 0, -1, false, state.document.slides[slide_number])
         vim.api.nvim_set_option_value("modifiable", false, { buf = state.floats.presentation.buf })
         set_footer()
+
+        -- The footer width changes when we jump from slide 9 to slide 10, from 99 to 100 etc.
+        local updated_windows = create_window_config { factor = state.fill_factor }
+        vim.api.nvim_win_set_config(state.floats.footer.win, updated_windows.footer)
+
         vim.api.nvim_buf_set_lines(state.floats.footer.buf, 0, -1, false, { state.footer })
-        -- The "!" here is important because we remap the "g" key later
-        vim.cmd "normal! gg0"
+        vim.api.nvim_win_set_cursor(0, { 1, 0 })
     end
 end
 
@@ -134,6 +138,11 @@ end
 local run_codeblock = function()
     local row, _ = unpack(vim.api.nvim_win_get_cursor(0))
     local codeblock = {}
+    local current_line = vim.api.nvim_get_current_line()
+    if not current_line:find("^```") then
+        print("Not on a code block!")
+        return
+    end
     local lines = vim.api.nvim_buf_get_lines(0, row, -1, false)
     local endrow = row
     for _, line in ipairs(lines) do
@@ -223,15 +232,11 @@ M.mdp = function(opts)
     -- Next slide
     mdp_keymap("n", "n", function()
         set_slide(state.slide_number + 1)
-        -- The footer width changes when we jump from slide 9 to slide 10, from 99 to 100 etc.
-        vim.api.nvim_win_set_config(state.floats.footer.win, { width = #state.footer })
     end)
 
     -- Previous slide
     mdp_keymap("n", "p", function()
         set_slide(state.slide_number - 1)
-        -- The footer width changes when we jump from slide 9 to slide 10, from 99 to 100 etc.
-        vim.api.nvim_win_set_config(state.floats.footer.win, { width = #state.footer })
     end)
 
     -- First slide
