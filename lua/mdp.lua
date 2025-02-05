@@ -310,6 +310,9 @@ M.mdp = function(opts)
     -- Execute code block under cursor
     mdp_keymap("n", "x", run_codeblock)
 
+    -- Next code block
+    mdp_keymap("n", "X", function() vim.fn.search("^```\\w") end)
+
     -- Update windows properties on resize
     vim.api.nvim_create_autocmd("VimResized", {
         group = vim.api.nvim_create_augroup("mdp-resized", {}),
