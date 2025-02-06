@@ -201,8 +201,21 @@ local run_codeblock = function()
         table.remove(output)
     end
 
+    local max_length = 1
+    for i, line in ipairs(output) do
+        output[i] = "│ " .. output[i]
+        if #line > max_length then
+            max_length = #line
+        end
+    end
+    local window_config = create_window_config { factor = state.fill_factor }
+    -- do not exceed presentation width
+    max_length = math.min(max_length, window_config.presentation.width - 4)
+    local sep = "╭" .. string.rep("─", max_length) .. "──╮"
+
+    table.insert(output, 1, sep)
     table.insert(output, 1, "```")
-    table.insert(output, 1, "")
+    table.insert(output, "╰")
     table.insert(output, "```")
 
     vim.api.nvim_set_option_value("modifiable", true, { buf = state.floats.presentation.buf })
@@ -311,7 +324,7 @@ M.mdp = function(opts)
     mdp_keymap("n", "x", run_codeblock)
 
     -- Next code block
-    mdp_keymap("n", "X", function() vim.fn.search("^```\\w") end)
+    mdp_keymap("n", "N", function() vim.fn.search("^```\\w") end)
 
     -- Update windows properties on resize
     vim.api.nvim_create_autocmd("VimResized", {
