@@ -347,8 +347,8 @@ M.mdp = function(opts)
 end
 
 -- FIXME to remove
-if vim.api.nvim_buf_get_name(0):find "/mdp.nvim/lua/mdp.lua$" then
-    M.mdp { bufnr = 2 }
-end
+-- if vim.api.nvim_buf_get_name(0):find "/mdp.nvim/lua/mdp.lua$" then
+--     M.mdp { bufnr = 2 }
+-- end
 
 return M
