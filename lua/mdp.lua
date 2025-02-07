@@ -146,11 +146,6 @@ local codeblock_bash = function(codeblock)
     vim.fn.writefile({ "bash " .. tempfile .. " 2>&1"}, tempfile_exe)
 
     local result = vim.system({ "bash", tempfile_exe }, { text = true }):wait()
-    if result.code ~= 0 then
-        local output = vim.split(result.stderr, "\n")
-        return output
-    end
-
     local output = vim.split(result.stdout, "\n")
     return output
 end
