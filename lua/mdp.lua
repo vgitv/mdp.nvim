@@ -138,10 +138,14 @@ end
 ---@param codeblock table Lines of code to execute
 ---@return table: table with output lines
 local codeblock_bash = function(codeblock)
-    local tempfile = vim.fn.tempname() .. ".sh"
+    local tempfile = vim.fn.tempname() .. "_codeblock.sh"
     vim.fn.writefile(codeblock, tempfile)
+    local tempfile_exe = vim.fn.tempname() .. "_exe.sh"
+    -- FIXME Not clean, but only way I could find not to separate stdout and stderr...
+    -- Redirect does not work inside vim.system
+    vim.fn.writefile({ "bash " .. tempfile .. " 2>&1"}, tempfile_exe)
 
-    local result = vim.system({ "bash", tempfile }, { text = true }):wait()
+    local result = vim.system({ "bash", tempfile_exe }, { text = true }):wait()
     if result.code ~= 0 then
         local output = vim.split(result.stderr, "\n")
         return output
@@ -203,7 +207,6 @@ local run_codeblock = function()
 
     local max_length = 1
     for i, line in ipairs(output) do
-        output[i] = "│ " .. output[i]
         if #line > max_length then
             max_length = #line
         end
@@ -211,11 +214,11 @@ local run_codeblock = function()
     local window_config = create_window_config { factor = state.fill_factor }
     -- do not exceed presentation width
     max_length = math.min(max_length, window_config.presentation.width - 4)
-    local sep = "╭" .. string.rep("─", max_length) .. "──╮"
+    local sep = string.rep("─", max_length)
 
     table.insert(output, 1, sep)
     table.insert(output, 1, "```")
-    table.insert(output, "╰")
+    table.insert(output, sep)
     table.insert(output, "```")
 
     vim.api.nvim_set_option_value("modifiable", true, { buf = state.floats.presentation.buf })
