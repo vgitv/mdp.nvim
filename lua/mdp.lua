@@ -201,14 +201,14 @@ local run_codeblock = function()
     end
 
     local max_length = 1
-    for i, line in ipairs(output) do
+    for _, line in ipairs(output) do
         if #line > max_length then
             max_length = #line
         end
     end
     local window_config = create_window_config { factor = state.fill_factor }
     -- do not exceed presentation width
-    max_length = math.min(max_length, window_config.presentation.width - 4)
+    max_length = math.min(max_length, window_config.presentation.width)
     local sep = string.rep("─", max_length)
 
     table.insert(output, 1, sep)
