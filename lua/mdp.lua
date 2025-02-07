@@ -147,7 +147,7 @@ local codeblock_bash = function(codeblock)
 
     local result = vim.system({ "bash", tempfile_exe }, { text = true }):wait()
     local output = vim.split(result.stdout, "\n")
-    return output
+    return { output=output, return_code=result.code }
 end
 
 ---Execute python code
@@ -164,7 +164,7 @@ local codeblock_python = function(codeblock)
     end
 
     local output = vim.split(result.stdout, "\n")
-    return output
+    return { output=output, exec_result=result.code }
 end
 
 local options = {
@@ -194,14 +194,14 @@ local run_codeblock = function()
     end
 
     local executor = string.gsub(current_line, "```", "")
-    local output = options.executors[executor](codeblock)
+    local exec_result = options.executors[executor](codeblock)
 
-    if output[#output] == "" then
-        table.remove(output)
+    if exec_result.output[#exec_result.output] == "" then
+        table.remove(exec_result.output)
     end
 
     local max_length = 1
-    for _, line in ipairs(output) do
+    for _, line in ipairs(exec_result.output) do
         if #line > max_length then
             max_length = #line
         end
@@ -211,13 +211,14 @@ local run_codeblock = function()
     max_length = math.min(max_length, window_config.presentation.width)
     local sep = string.rep("─", max_length)
 
-    table.insert(output, 1, sep)
-    table.insert(output, 1, "```")
-    table.insert(output, sep)
-    table.insert(output, "```")
+    table.insert(exec_result.output, 1, sep)
+    table.insert(exec_result.output, 1, "RC: " .. exec_result.return_code)
+    table.insert(exec_result.output, 1, "```")
+    table.insert(exec_result.output, sep)
+    table.insert(exec_result.output, "```")
 
     vim.api.nvim_set_option_value("modifiable", true, { buf = state.floats.presentation.buf })
-    vim.api.nvim_buf_set_lines(0, endrow, endrow, false, output)
+    vim.api.nvim_buf_set_lines(0, endrow, endrow, false, exec_result.output)
     vim.api.nvim_set_option_value("modifiable", false, { buf = state.floats.presentation.buf })
 end
 
@@ -346,8 +347,8 @@ M.mdp = function(opts)
 end
 
 -- FIXME to remove
--- if vim.api.nvim_buf_get_name(0):find "/mdp.nvim/lua/mdp.lua$" then
---     M.mdp { bufnr = 2 }
--- end
+if vim.api.nvim_buf_get_name(0):find "/mdp.nvim/lua/mdp.lua$" then
+    M.mdp { bufnr = 2 }
+end
 
 return M
