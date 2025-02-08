@@ -176,6 +176,7 @@ local options = {
 
 ---Execute code block under cursor
 local run_codeblock = function()
+    vim.fn.search("^```\\w")
     local row, _ = unpack(vim.api.nvim_win_get_cursor(0))
     local codeblock = {}
     local current_line = vim.api.nvim_get_current_line()
@@ -200,7 +201,7 @@ local run_codeblock = function()
         table.remove(exec_result.output)
     end
 
-    local max_length = 1
+    local max_length = #tostring(exec_result.return_code) + 3
     for _, line in ipairs(exec_result.output) do
         if #line > max_length then
             max_length = #line
@@ -212,7 +213,7 @@ local run_codeblock = function()
     local sep = string.rep("─", max_length)
 
     table.insert(exec_result.output, 1, sep)
-    table.insert(exec_result.output, 1, "RC: " .. exec_result.return_code)
+    table.insert(exec_result.output, 1, "RC=" .. exec_result.return_code)
     table.insert(exec_result.output, 1, "```")
     table.insert(exec_result.output, sep)
     table.insert(exec_result.output, "```")
@@ -244,6 +245,8 @@ M.mdp = function(opts)
     -- Set local options
     vim.api.nvim_set_option_value("filetype", "markdown", { buf = state.floats.presentation.buf })
     vim.api.nvim_set_option_value("colorcolumn", "", { win = state.floats.presentation.win })
+    vim.api.nvim_set_option_value("conceallevel", 2, { win = state.floats.presentation.win })
+    vim.api.nvim_set_option_value("concealcursor", "nc", { win = state.floats.presentation.win })
 
     -- Define global options
     local plugin_options = {
@@ -277,12 +280,12 @@ M.mdp = function(opts)
 
     -- Define keymaps
     -- Next slide
-    mdp_keymap("n", "n", function()
+    mdp_keymap("n", "j", function()
         set_slide(state.slide_number + 1)
     end)
 
     -- Previous slide
-    mdp_keymap("n", "p", function()
+    mdp_keymap("n", "k", function()
         set_slide(state.slide_number - 1)
     end)
 
@@ -294,6 +297,11 @@ M.mdp = function(opts)
     -- Last slide
     mdp_keymap("n", "G", function()
         set_slide(#state.document.slides)
+    end)
+
+    -- Refresh current slide
+    mdp_keymap("n", "R", function()
+        set_slide(state.slide_number)
     end)
 
     -- Quit presentation
@@ -321,9 +329,6 @@ M.mdp = function(opts)
 
     -- Execute code block under cursor
     mdp_keymap("n", "x", run_codeblock)
-
-    -- Next code block
-    mdp_keymap("n", "N", function() vim.fn.search("^```\\w") end)
 
     -- Update windows properties on resize
     vim.api.nvim_create_autocmd("VimResized", {

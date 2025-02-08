@@ -18,7 +18,12 @@ require("mdp").setup()
 
 | KEY  | ACTION                                     |
 |------|--------------------------------------------|
-| n    | Next slide                                 |
-| p    | Previous slide                             |
+| j    | Next slide                                 |
+| k    | Previous slide                             |
 | -    | Decrease presentation floating window size |
 | +    | Increase presentation floating window size |
+| x    | Execute next code block                    |
+| R    | Refresh current slide                      |
+| gg   | Go to first slide                          |
+| G    | Go to last slide                           |
+| q    | Quit presentation mode                     |
