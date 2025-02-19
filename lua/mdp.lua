@@ -90,7 +90,7 @@ local parse_slides = function(lines)
     local document = { slides = {} }
     local slide = {}
 
-    local separator = "^---"
+    local separator = "^---$"
 
     for _, line in ipairs(lines) do
         if line:find(separator) then
