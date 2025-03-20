@@ -134,37 +134,35 @@ local set_slide = function(slide_number)
     end
 end
 
+---Execute command line redirecting stderr to stdout
+---@param cmd table command line to run the temp file
+---@return table: table with output lines and return code
+local system_exec_wrapper = function(cmd)
+    -- FIXME Not clean, but only way I could find not to separate stdout and stderr...
+    -- Redirect does not work inside vim.system
+    local tempfile_exe = vim.fn.tempname() .. "_exe.sh"
+    vim.fn.writefile({ table.concat(cmd, " ") .. " 2>&1" }, tempfile_exe)
+    local result = vim.system({ "bash", tempfile_exe }, { text = true }):wait()
+    local output = vim.split(result.stdout, "\n")
+    return { output = output, return_code = result.code }
+end
+
 ---Execute bash code
 ---@param codeblock table Lines of code to execute
----@return table: table with output lines
+---@return table: table with output lines and return code
 local codeblock_bash = function(codeblock)
     local tempfile = vim.fn.tempname() .. "_codeblock.sh"
     vim.fn.writefile(codeblock, tempfile)
-    local tempfile_exe = vim.fn.tempname() .. "_exe.sh"
-    -- FIXME Not clean, but only way I could find not to separate stdout and stderr...
-    -- Redirect does not work inside vim.system
-    vim.fn.writefile({ "bash " .. tempfile .. " 2>&1"}, tempfile_exe)
-
-    local result = vim.system({ "bash", tempfile_exe }, { text = true }):wait()
-    local output = vim.split(result.stdout, "\n")
-    return { output=output, return_code=result.code }
+    return system_exec_wrapper { "bash", tempfile }
 end
 
 ---Execute python code
 ---@param codeblock table Lines of code to execute
----@return table: table with output lines
+---@return table: table with output lines and return code
 local codeblock_python = function(codeblock)
-    local tempfile = vim.fn.tempname() .. ".py"
+    local tempfile = vim.fn.tempname() .. "_codeblock.py"
     vim.fn.writefile(codeblock, tempfile)
-
-    local result = vim.system({ "python", tempfile }, { text = true }):wait()
-    if result.code ~= 0 then
-        local output = vim.split(result.stderr, "\n")
-        return output
-    end
-
-    local output = vim.split(result.stdout, "\n")
-    return { output=output, exec_result=result.code }
+    return system_exec_wrapper { "python", tempfile }
 end
 
 local options = {
@@ -174,16 +172,12 @@ local options = {
     },
 }
 
----Execute code block under cursor
+---Execute next code block
 local run_codeblock = function()
-    vim.fn.search("^```\\w")
+    vim.fn.search "^```\\w"
     local row, _ = unpack(vim.api.nvim_win_get_cursor(0))
     local codeblock = {}
     local current_line = vim.api.nvim_get_current_line()
-    if not current_line:find "^```" then
-        print "Not on a code block!"
-        return
-    end
     local lines = vim.api.nvim_buf_get_lines(0, row, -1, false)
     local endrow = row
     for _, line in ipairs(lines) do
@@ -327,7 +321,7 @@ M.mdp = function(opts)
         vim.api.nvim_win_set_config(state.floats.footer.win, updated_windows.footer)
     end)
 
-    -- Execute code block under cursor
+    -- Execute next code block
     mdp_keymap("n", "x", run_codeblock)
 
     -- Update windows properties on resize
@@ -352,8 +346,8 @@ M.mdp = function(opts)
 end
 
 -- FIXME to remove
--- if vim.api.nvim_buf_get_name(0):find "/mdp.nvim/lua/mdp.lua$" then
---     M.mdp { bufnr = 2 }
--- end
+if vim.api.nvim_buf_get_name(0):find "/mdp.nvim/lua/mdp.lua$" then
+    M.mdp { bufnr = 2 }
+end
 
 return M
