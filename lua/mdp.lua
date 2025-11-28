@@ -345,9 +345,4 @@ M.mdp = function(opts)
     vim.api.nvim_set_option_value("modifiable", false, { buf = state.floats.presentation.buf })
 end
 
--- FIXME to remove
-if vim.api.nvim_buf_get_name(0):find "/mdp.nvim/lua/mdp.lua$" then
-    M.mdp { bufnr = 2 }
-end
-
 return M
