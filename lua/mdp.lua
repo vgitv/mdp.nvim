@@ -239,7 +239,7 @@ M.mdp = function(opts)
     -- Set local options
     vim.api.nvim_set_option_value("filetype", "markdown", { buf = state.floats.presentation.buf })
     vim.api.nvim_set_option_value("colorcolumn", "", { win = state.floats.presentation.win })
-    vim.api.nvim_set_option_value("conceallevel", 2, { win = state.floats.presentation.win })
+    vim.api.nvim_set_option_value("conceallevel", 3, { win = state.floats.presentation.win })
     vim.api.nvim_set_option_value("concealcursor", "nc", { win = state.floats.presentation.win })
 
     -- Define global options
