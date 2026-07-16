@@ -232,15 +232,6 @@ M.mdp = function(opts)
     set_footer()
     local windows = create_window_config { factor = state.fill_factor }
     state.slide_number = 1
-    state.floats.background = create_floating_window(windows.background)
-    state.floats.footer = create_floating_window(windows.footer)
-    state.floats.presentation = create_floating_window(windows.presentation, true)
-
-    -- Set local options
-    vim.api.nvim_set_option_value("filetype", "markdown", { buf = state.floats.presentation.buf })
-    vim.api.nvim_set_option_value("colorcolumn", "", { win = state.floats.presentation.win })
-    vim.api.nvim_set_option_value("conceallevel", 3, { win = state.floats.presentation.win })
-    vim.api.nvim_set_option_value("concealcursor", "nc", { win = state.floats.presentation.win })
 
     -- Define global options
     local plugin_options = {
@@ -262,6 +253,16 @@ M.mdp = function(opts)
     for option, config in pairs(plugin_options) do
         vim.opt[option] = config.plugin
     end
+
+    state.floats.background = create_floating_window(windows.background)
+    state.floats.footer = create_floating_window(windows.footer)
+    state.floats.presentation = create_floating_window(windows.presentation, true)
+
+    -- Set local options
+    vim.api.nvim_set_option_value("filetype", "markdown", { buf = state.floats.presentation.buf })
+    vim.api.nvim_set_option_value("colorcolumn", "", { win = state.floats.presentation.win })
+    vim.api.nvim_set_option_value("conceallevel", 3, { win = state.floats.presentation.win })
+    vim.api.nvim_set_option_value("concealcursor", "nc", { win = state.floats.presentation.win })
 
     -- Restore global options
     vim.api.nvim_create_autocmd("BufLeave", {
