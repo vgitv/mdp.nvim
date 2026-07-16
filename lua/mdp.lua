@@ -252,6 +252,10 @@ M.mdp = function(opts)
             original = vim.o.mouse,
             plugin = "",
         },
+        laststatus = {
+            original = vim.o.laststatus,
+            plugin = 0,
+        }
     }
 
     -- Set global options
